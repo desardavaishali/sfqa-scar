@@ -1,0 +1,61 @@
+{
+  "name": "@sfqa/scar",
+  "version": "0.1.0",
+  "description": "Review code against a Salesforce test suite's scar tissue: past failures, encoded as declarative rules.",
+  "license": "MIT",
+  "author": "Vaishali Desarda",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/desardavaishali/sfqa-scar.git",
+    "directory": "packages/scar"
+  },
+  "bugs": {
+    "url": "https://github.com/desardavaishali/sfqa-scar/issues"
+  },
+  "homepage": "https://github.com/desardavaishali/sfqa-scar#readme",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "sfqa-scar": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./rules/generic.json": "./rules/generic.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "rules",
+    "prompts",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "tsx --test test/scar.test.ts test/harvest.test.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "verify": "node scripts/verify.mjs",
+    "validate:scar": "node ../../scar-validation/run.mjs"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "salesforce",
+    "scar-tissue",
+    "code-review",
+    "lint",
+    "testing",
+    "qa",
+    "playwright"
+  ]
+}

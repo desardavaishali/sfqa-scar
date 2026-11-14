@@ -1,0 +1,518 @@
+{
+  "$schema_note": "A client-free scar-tissue rule set. The 'rule', 'context', 'origin', 'severity' and 'detection_pattern' keys are the human-readable contract; the 'match' object is the machine-executable detector. This file is a TEMPLATE: the example value lists (labelRules, inventory-code shape, local-only file patterns) must be replaced with your org's own canonical labels and conventions. Regenerate a rule set from your own git history with the extraction prompt shipped alongside the package.",
+  "version": 1,
+  "description": "Template scar-tissue rule set: past-failure patterns that a Salesforce test suite tends to repeat. No client vocabulary.",
+  "generated_from_repo": "template (client-free)",
+  "rules": [
+    {
+      "id": "ST-001",
+      "rule": "Never hardcode credentials, tokens or secrets in code, config fallbacks, or committed .env files.",
+      "context": "Environment config (test-lib/setup/env.ts), any auth or API client code, repository root. Treat any environment that handles personal or payment data accordingly.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Plaintext passwords sat as `|| 'literal'` fallbacks in the environment config, and a real .env containing live credentials was once committed. Removing the file did not remove it from history, forcing repeated rotation commits that re-exposed every new secret."
+      },
+      "severity": "high",
+      "detection_pattern": "Any assignment of a quoted string of 6+ chars to a key named password/passwd/pwd/secret/token/apikey; any tracked .env file. Exempt reads sourced from process.env / a secret manager with empty-string fallbacks. The literal must sit directly after the assignment or its `||` fallback - a key passed into a function call (`map.get(\"password\")`) is a lookup, not a secret.",
+      "match": {
+        "pathExclude": [
+          "**/.env.example",
+          "**/node_modules/**"
+        ],
+        "fileNameRules": [
+          {
+            "pattern": "^\\.env$"
+          }
+        ],
+        "linePatterns": [
+          "(?i)(?:password|passwd|pwd|secret|token|api[_-]?key)\\s*[:=][^'\"\\n(]*['\"](?!\\s*(?:role=|css=|xpath=|text=))[^'\"\\s]{6,}['\"]"
+        ],
+        "fileExemptLines": [
+          "process\\.env\\.[A-Z_]*(PASSWORD|TOKEN|SECRET|KEY)[A-Z_]*\\s*\\|\\|\\s*''"
+        ]
+      },
+      "recommendation": "Source credentials only from environment variables or a secret manager; keep .env gitignored and ship .env.example with empty values. If a secret already reached history, rotate it - deleting the file does not un-leak the value."
+    },
+    {
+      "id": "ST-002",
+      "rule": "Each environment config must reference its OWN environment's variables - never another environment's (sit2 must read SIT2_*, not SIT_*).",
+      "context": "Multi-environment config blocks (dev/sit/sit2/uat/prod) in test-lib/setup/env.ts.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "The sit2 environment block was wired to SIT_* variables, so 'SIT2 runs' silently authenticated against the SIT org. Tests validated the wrong environment and the results were trusted until the wiring was fixed."
+      },
+      "severity": "high",
+      "detection_pattern": "An environment block (e.g. sit2:) whose body references variables prefixed with a DIFFERENT environment name within ~600 chars.",
+      "match": {
+        "pathInclude": [
+          "**/env.ts",
+          "**/env*.ts",
+          "**/*config*.ts"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "sit2:\\s*[\\s\\S]{0,600}?process\\.env\\.SIT_(?!2)[A-Z_]"
+        ]
+      },
+      "recommendation": "For each environment block, assert every process.env reference carries that block's prefix. Add a startup guard that fails fast when a required per-environment variable is missing instead of falling back to a sibling environment."
+    },
+    {
+      "id": "ST-003",
+      "rule": "Picklist values must match the Salesforce label EXACTLY - casing, spaces and hyphens (Web not web; Preferred Contact not PreferredContact).",
+      "context": "Picklist-driven fields everywhere: features/*.feature tables, test-constants/*.ts, generated data profiles.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Constants shipped near-miss spellings; Salesforce rejected them, so records were created with wrong or blank data. The same drift recurs between constant files whenever the org's picklists change."
+      },
+      "severity": "high",
+      "detection_pattern": "A quoted literal that matches a configured canonical label case-insensitively, or after removing spaces and hyphens, but is not exactly equal to it. The canonical list is per-org input; the list below is an example and must be replaced.",
+      "match": {
+        "pathInclude": [
+          "features/**",
+          "test-constants/**",
+          "test-lib/**"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "labelRules": [
+          {
+            "canonical": [
+              "Web",
+              "Event",
+              "Referral",
+              "Phone",
+              "Email",
+              "SMS",
+              "First Name",
+              "Last Name",
+              "Lead Source",
+              "Preferred Contact"
+            ]
+          }
+        ]
+      },
+      "recommendation": "Copy labels from the org's UI or describe verbatim into ONE safety-net constants file and derive everything else from it. When the org changes picklists, diff against live metadata before editing values."
+    },
+    {
+      "id": "ST-004",
+      "rule": "Never pass options to isVisible() - it takes none and returns instantly. Use waitFor({ state: 'visible', timeout }) when render timing matters.",
+      "context": "All Playwright page objects (test-pages/web/**), field readers and verification helpers reading Lightning labels.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "A field reader called isVisible({ timeout: 5000 }); Playwright ignores options there and returns immediately, so a Lightning label still rendering read as absent and the value was silently reported as empty. The same misuse tends to spread across page objects."
+      },
+      "severity": "high",
+      "detection_pattern": ".isVisible({ ... }) - any argument passed to isVisible, unless the call is .catch()-guarded (an explicit \"is it there right now\" check). Silent false negatives in assertions: no error, just a wrong verdict.",
+      "match": {
+        "pathInclude": [
+          "**/*.ts",
+          "**/*.js"
+        ],
+        "pathExclude": [
+          "**/node_modules/**",
+          "**/.features-gen/**"
+        ],
+        "linePatterns": [
+          "\\.isVisible\\(\\s*\\{[^{}]{0,200}?\\}\\)(?!\\s*\\.catch)"
+        ],
+        "fileExemptLines": [
+          "\\.catch\\("
+        ]
+      },
+      "recommendation": "Replace with `await locator.waitFor({ state: 'visible', timeout: N }).then(() => true).catch(() => false)` - a visible wait that cannot silently report a stale DOM."
+    },
+    {
+      "id": "ST-005",
+      "rule": "Do not treat success toasts as the sole success signal - they can be absent or auto-dismiss before capture on slower environments.",
+      "context": "Lightning toast assertions (.toastMessage / forceActionsText), save confirmations and conversion flows in test-pages/web/**.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "A duplicate-resolution flow hard-waited for a success toast; on a slower environment the toast was absent or dismissed before capture and green conversions hard-failed. The fix races the toast against a durable path step."
+      },
+      "severity": "med",
+      "detection_pattern": "waitFor/expect on a toast selector without a Promise.race against a durable signal (record URL, path step, primary field render).",
+      "match": {
+        "pathInclude": [
+          "test-pages/**",
+          "test-lib/**"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "toastMessage",
+          "hasText:\\s*'[^']*success"
+        ],
+        "fileExemptSignals": [
+          "Promise\\.race"
+        ]
+      },
+      "recommendation": "Race the toast against a durable post-condition (`Promise.race([toast.waitFor(...), durableSignal.waitFor(...)])`) so a dismissed toast cannot fail a successful save."
+    },
+    {
+      "id": "ST-006",
+      "rule": "Record-page navigation checks must tolerate Lightning URL variants (/lightning/r/<Object>/<id>/view AND canonical /lightning/r/<id>/view) and must not rely on a single waitForURL pattern.",
+      "context": "Record navigation assertions in test-pages/web/** and the steps that call them.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "A save helper used one anchored record-URL regex; on another environment the suffix differed and saves exceeded the timeout. Separately, checks matching only the object-prefixed path broke because in-app navigation yields canonical /lightning/r/<id>/view URLs."
+      },
+      "severity": "med",
+      "detection_pattern": "waitForURL with a strict anchored regex, or URL assertions checking only the object-prefixed path shape.",
+      "match": {
+        "pathInclude": [
+          "test-pages/**",
+          "test-lib/**"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "waitForURL\\("
+        ]
+      },
+      "recommendation": "Accept both URL shapes (regex like /lightning/r/(?:Object\\/)?<id>\\/view) and poll multiple success signals (URL, primary field rendered, path component) rather than one strict wait."
+    },
+    {
+      "id": "ST-007",
+      "rule": "Polling fields populated by async backend integrations must periodically reload the record - Lightning never live-updates server-side-rendered fields.",
+      "context": "Any cross-system field surfaced on a Lightning record page and polled in test-pages/web/**.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Integration-populated fields render server-side after record creation; polling the open page stalled forever because the DOM never updated. The fix reloads the record every few stalled polls within a fixed time budget."
+      },
+      "severity": "med",
+      "detection_pattern": "Deadline-based polling loops (Date.now() < deadline / MAX_WAIT) in page objects with NO reload/goto capability in the same file.",
+      "match": {
+        "pathInclude": [
+          "test-pages/**"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "Date\\.now\\(\\)\\s*<\\s*deadline",
+          "MAX_WAIT"
+        ],
+        "fileExemptSignals": [
+          "reload\\("
+        ]
+      },
+      "recommendation": "Inside the poll loop, count stalled attempts and `await page.reload()` + re-open the Details tab every N attempts, bounded. A deadline alone cannot see server-side data."
+    },
+    {
+      "id": "ST-008",
+      "rule": "Never hardcode mutable business records (specific inventory units, named accounts or orders) in scenarios - use availability sentinels or search fallbacks.",
+      "context": "features/**/*.feature Examples tables, assignment steps, any fixture referencing consumable inventory.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Smoke scenarios pinned concrete inventory codes; each green run CONSUMED the record and the next run failed on 'not available'. The fix introduced a sentinel so the product's search picks the freshest eligible row at runtime."
+      },
+      "severity": "high",
+      "detection_pattern": "Concrete inventory codes in feature tables or step expectations. The shape below is an EXAMPLE (project-floor-unit); replace it with your org's identifier shape.",
+      "match": {
+        "pathInclude": [
+          "features/**",
+          "test-lib/bdd/**"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "[A-Za-z][A-Za-z0-9]*-(?:B|T)\\d{1,2}-\\d{1,2}-\\d{1,2}"
+        ]
+      },
+      "recommendation": "Use a sentinel (e.g. AUTO) resolved by an availability-aware search with deterministic tie-breaking, logging what was actually selected."
+    },
+    {
+      "id": "ST-009",
+      "rule": "Per-test timeout must exceed the MEASURED duration of the longest legitimate journey - a timeout that fires mid-green-run causes retries that create duplicate records.",
+      "context": "playwright.config.ts global timeout vs the longest end-to-end journey (login + create/convert + booking + verification).",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "The timeout was bumped repeatedly (3min -> 5min -> 10min). At 300s the cap expired during the final steps of fully-green runs; Playwright retried, and each retry created ANOTHER business record in a shared environment."
+      },
+      "severity": "high",
+      "detection_pattern": "Top-level test timeout set below the measured journey length. The numeric ceiling below is an example; set it from your own measured duration.",
+      "match": {
+        "pathInclude": [
+          "playwright.config.*"
+        ],
+        "numericRules": [
+          {
+            "pattern": "^\\s*timeout:\\s*(\\d+)",
+            "flags": "gm",
+            "min": 0,
+            "max": 359999
+          }
+        ]
+      },
+      "recommendation": "Time the longest journey from real runs, add headroom (~2x), and make create/book flows idempotent or retry-safe - timeout expiry on a non-idempotent flow writes duplicate data."
+    },
+    {
+      "id": "ST-010",
+      "rule": "Keep the reporter-finalization window free of teardown work - no report zipping/moving in globalTeardown, no broad pkill.",
+      "context": "playwright.config.ts lifecycle hooks and CI artifact steps (.github/workflows/**).",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "GlobalTeardown zipped the HTML report, but teardown runs BEFORE reporter.onEnd, so it zipped a stale live report; its `pkill -f chrome` also matched any process with that substring system-wide. Teardown was deleted and CI uploads the results directory directly."
+      },
+      "severity": "med",
+      "detection_pattern": "globalTeardown wiring touching report artifacts, or pkill -f with a generic process name.",
+      "match": {
+        "pathInclude": [
+          "playwright.config.*",
+          ".github/**",
+          "*.config.*"
+        ],
+        "linePatterns": [
+          "globalTeardown",
+          "pkill\\s+-f"
+        ]
+      },
+      "recommendation": "Let Playwright close workers itself; do artifact packaging in CI AFTER the job, and never reap processes by fuzzy name."
+    },
+    {
+      "id": "ST-011",
+      "rule": "Authentication flows must go through the shared LoginPage flow - never hardcode standard-login selectors that break on SSO environments.",
+      "context": "Session bootstrap (test-lib/setup/**) and any direct login automation; SSO environments redirect away from the standard Salesforce login form.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "A pre-auth step hardcoded the standard username input, which only exists on the login form; behind an SSO redirect the selector never matched and the browser sat on the login page forever. The fix delegates to the shared LoginPage flow."
+      },
+      "severity": "high",
+      "detection_pattern": "Direct selectors for username/password inputs outside LoginPage; session-validation timeouts under ~20s (false 'dead' verdicts cost a full MFA round trip).",
+      "match": {
+        "pathInclude": [
+          "test-lib/setup/**",
+          "test-pages/**"
+        ],
+        "pathExclude": [
+          "**/LoginPage.ts",
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "input\\[name=[\"']username[\"']\\]",
+          "input\\[name=[\"']password[\"']\\]"
+        ]
+      },
+      "recommendation": "Reuse LoginPage for every auth path; treat 'login form vanished' as possible success and verify the logged-in state with a generous timeout before failing."
+    },
+    {
+      "id": "ST-012",
+      "rule": "Shared-browser/human-in-the-loop logins need race tolerance: if credential fill fails because a human already logged in, adopt that session instead of throwing.",
+      "context": "The shared LoginPage and pre-auth session validation (a headful window reused by engineers).",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "When a human typed credentials or approved MFA faster than the script, credential fill timed out and the run failed even though the browser was fully logged in. Separately, a 15s logged-in check produced false 'dead session' verdicts costing an MFA round trip per attempt."
+      },
+      "severity": "med",
+      "detection_pattern": "The logged-in probe (#oneHeader or equivalent) waits shorter than 30s, or credential-fill failures that do not re-check logged-in state before throwing.",
+      "match": {
+        "pathInclude": [
+          "test-lib/setup/**",
+          "test-pages/web/LoginPage.ts"
+        ],
+        "numericRules": [
+          {
+            "pattern": "#oneHeader[\\s\\S]{0,200}?timeout:\\s*(\\d+)",
+            "flags": "gm",
+            "min": 0,
+            "max": 29999
+          }
+        ]
+      },
+      "recommendation": "Validate sessions with >=60s budgets on cold environments and wrap manual-fill steps in try/catch that re-probes logged-in state before failing."
+    },
+    {
+      "id": "ST-013",
+      "rule": "After impersonation (Login-As) or a popup/tab switch, rebuild page objects on the world-tracked ACTIVE page - the injected `page` fixture points at the wrong tab.",
+      "context": "BDD steps orchestrating a user switch plus booking flows (test-lib/bdd/steps/**) and HomePage.switchToUser* helpers.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Steps constructed page objects from the injected page fixture while the actual navigation happened on the impersonated tab. Locators hit a stale or blank page and flaked. The fix builds subsequent page objects from the world's active page."
+      },
+      "severity": "med",
+      "detection_pattern": "In steps: `new SomePage(page, ...)` using the raw fixture in files that also perform impersonation or tab switches.",
+      "match": {
+        "pathInclude": [
+          "test-lib/bdd/steps/**"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "new\\s+(?:LeadPage|OpportunityPage|SalesOrderPage|HomePage|UnitPage)\\(\\s*page\\s*,"
+        ],
+        "fileExemptSignals": [
+          "activePage"
+        ]
+      },
+      "recommendation": "Track the active page in the BDD world after every switch or popup and construct page objects from that."
+    },
+    {
+      "id": "ST-014",
+      "rule": "Lead conversion has TWO runtime outcomes (fresh account vs existing-account duplicate). Verification must branch at runtime and read account identity from the record, never assume names from lead data.",
+      "context": "Lead conversion and duplicate-account resolution (LeadPage conversion methods, conversion steps).",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Asserting that the converted account name contains the lead's name breaks on the duplicate path, where the converted account pre-exists under a different name - a false red, or a false green if skipped blindly. The fix gates the name check on the duplicate-detected branch and reads the real account name and id from the page."
+      },
+      "severity": "high",
+      "detection_pattern": "Assertions tying converted-account/opportunity names to lead-derived names without a duplicate-detected branch guard.",
+      "match": {
+        "pathInclude": [
+          "test-pages/**",
+          "test-lib/bdd/**"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "(?:account|opportunity)Name[\\s\\S]{0,120}?toContain\\("
+        ],
+        "fileExemptSignals": [
+          "duplicateDetected"
+        ]
+      },
+      "recommendation": "Branch on the duplicate-account check; read Account/Opportunity ids and names from the record page, never from lead data."
+    },
+    {
+      "id": "ST-015",
+      "rule": "Field-dependency maps and picklist constants must be verified against the LIVE org before merge - they describe validation rules that change without notice.",
+      "context": "test-constants/*.ts, safety-net constants and generated-data dependency fixes.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Dependency constants encoded values that no longer existed in the org; generated records were rejected by Salesforce validation. Later dependency rules were only added after form rejections were debugged live."
+      },
+      "severity": "med",
+      "detection_pattern": "A constants/dependency file that declares picklist-like value lists but carries no provenance marker (verified / source: describe / probe:) in the same file.",
+      "match": {
+        "pathInclude": [
+          "test-constants/**"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "fileRequiredSignals": [
+          "(?i)verified|source:\\s*describe|probe:"
+        ]
+      },
+      "recommendation": "Before merging new picklist usage, dump the org's picklist dependencies and reconcile the maps. Record the source and date in the file so the next reader knows when it was last verified, and protect each field with a safety-net entry so drift fails at generation time."
+    },
+    {
+      "id": "ST-016",
+      "rule": "Correlated fields in generated data must be co-constrained (salutation <-> gender) - independent randomization produces impossible records.",
+      "context": "test-lib/utils/TestDataGenerator.ts and any generator producing semantically linked field pairs.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Salutation and gender were randomized independently, producing internally contradictory records that undermine trust in verification. The fix links them (Mr. -> Male, Ms./Mrs. -> Female, Dr./Prof. -> any) and makes overrides constrain each other."
+      },
+      "severity": "low",
+      "detection_pattern": "A generator file that randomizes correlated fields without a coupling function or coupling map in the same file.",
+      "match": {
+        "pathInclude": [
+          "test-lib/utils/TestDataGenerator.ts",
+          "**/*DataGenerator*"
+        ],
+        "fileRequiredSignals": [
+          "getGenderForSalutation|salutationFromGender|SALUTATION_GENDER"
+        ]
+      },
+      "recommendation": "Define explicit coupling maps for correlated pairs and let explicit overrides propagate BOTH ways."
+    },
+    {
+      "id": "ST-017",
+      "rule": "Before adding any helper or constants file, search for an existing one - duplicated utilities drift apart and half of them are dead (or would throw if ever called).",
+      "context": "Repo-wide: two locator readers (one reading a file that did not exist), two modules exporting the same lookup names, a duplicated field-display map, and a delay() defined twice with DIFFERENT UNITS (ms vs seconds).",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "An audit removed dead duplicates and unused imports, but a cleanup checklist documented remaining twins - including two delay helpers with colliding units, a silent bug waiting for a caller."
+      },
+      "severity": "med",
+      "detection_pattern": "Second definition of an existing helper name, the same export from two modules, or the same concept with different units/signatures.",
+      "match": {
+        "pathInclude": [
+          "test-lib/**",
+          "*.ts"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "(?:export\\s+(?:async\\s+)?function|class)\\s+(?:delay|YamlReader|LocatorManager|locatorReader)\\b",
+          "function delay\\("
+        ]
+      },
+      "recommendation": "Reuse -> extend -> generalize -> create. If two near-duplicates exist, unify them BEFORE building a third thing on top."
+    },
+    {
+      "id": "ST-018",
+      "rule": "Local-only artifacts (personnel notes, diagnostics, reports, captured traffic) are gitignored from birth - never committed then purged later.",
+      "context": "Repository hygiene: personal feedback notes, report archives, captured diagnostics and stray results directories.",
+      "origin": {
+        "commit": null,
+        "pr": null,
+        "summary": "Personal notes naming colleagues and diagnostic scripts were committed and later had to be purged from tracking - content already cloned by teammates cannot be un-shared. The same class includes large report archives and stray results directories."
+      },
+      "severity": "low",
+      "detection_pattern": "Files matching known local-only patterns being added to git. This rule has no machine detector yet and is reported as a gap.",
+      "match": {
+        "pathInclude": [
+          "local-notes-*.md",
+          "*.zip",
+          "test-results/**",
+          "untitled folder/**"
+        ]
+      },
+      "recommendation": "Decide local-vs-repo at file creation; anything with names, credentials or machine-specific paths goes in .gitignore immediately."
+    },
+    {
+      "id": "ST-019",
+      "rule": "Read a record header from a scoped container, never a bare comma-list of element and class selectors plus .first().",
+      "context": "Lightning record page objects that read a record number, id or status from the page header.",
+      "origin": {
+        "commit": "79dafa3",
+        "pr": null,
+        "summary": "A header read used locator('lightning-formatted-text, .slds-page-header__title').first(); the first match was whichever node the DOM ordered first, so the journey read the wrong value. The fix replaced the list with a scoped header container, and the same list survived in another page object."
+      },
+      "severity": "med",
+      "detection_pattern": "A locator argument that is a bare comma-list mixing lightning-formatted-text with .slds-page-header__title, or .slds-form-element with a lightning-button selector, followed by .first(). The list matches containers, not the value.",
+      "match": {
+        "pathInclude": [
+          "**/test-pages/**/*.ts",
+          "**/pages/**/*.ts",
+          "**/page-objects/**/*.ts"
+        ],
+        "pathExclude": [
+          "**/node_modules/**"
+        ],
+        "linePatterns": [
+          "locator\\(\\s*['\"][^'\"]*lightning-formatted-text\\s*,\\s*\\.slds-page-header__title[^'\"]*['\"]\\)",
+          "locator\\(\\s*['\"][^'\"]*\\.slds-form-element\\s*,\\s*[^'\"]*lightning-button[^'\"]*['\"]\\)"
+        ]
+      },
+      "recommendation": "Scope the read to the record header (records-highlights2 or .slds-page-header) or to the field container, scan every candidate text, and accept only the text that matches the expected pattern. Never trust .first() on a list that mixes a container with a value element."
+    }
+  ]
+}

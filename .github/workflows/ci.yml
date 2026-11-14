@@ -1,0 +1,88 @@
+# .github/workflows/ci.yml
+# -----------------------------------------------------------------------------
+# The release gate for @sfqa/scar (Node 20, 22 and 24). Every command here is also a root script, so
+# a reader can run the same sequence locally:
+#
+#   npm run typecheck && npm test && npm run build && npm run verify && \
+#     npm run validate:scar
+#
+# `validate:scar` is the product claim: every rule with a detector is proven to
+# fire on a positive fixture and stay silent on the clean set. A green unit
+# suite alone is not enough, so the job fails on the proof as well.
+# -----------------------------------------------------------------------------
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: gate (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # dist/ is committed so a clone runs. Fail if the committed build is stale.
+      - name: dist is up to date
+        if: matrix.node == 22
+        run: |
+          if [ -n "$(git status --porcelain -- packages/scar/dist)" ]; then
+            echo "packages/scar/dist is out of date - run 'npm run build' and commit it"
+            git status --porcelain -- packages/scar/dist
+            exit 1
+          fi
+      - run: npm run verify
+      - run: npm run validate:scar
+
+  # A copyable example, not a second test suite. It shows the two outcomes a
+  # reviewer cares about: clean code exits 0, scar tissue exits 1 at high.
+  scar-fail-on-high:
+    name: example - fail on high
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: clean code exits 0 at --fail-on high
+        run: |
+          node packages/scar/dist/cli.js \
+            --fail-on high \
+            --rules packages/scar/rules/generic.json \
+            scar-validation/fixtures/negative
+
+      - name: scar tissue exits 1 at --fail-on high
+        shell: bash
+        run: |
+          set +e
+          node packages/scar/dist/cli.js \
+            --fail-on high \
+            --rules packages/scar/rules/generic.json \
+            scar-validation/fixtures/positive
+          status=$?
+          if [ "$status" -eq 0 ]; then
+            echo "expected a high-severity finding, but the scanner exited 0"
+            exit 1
+          fi
+          echo "scanner exited $status as expected"
