@@ -20,7 +20,7 @@
     "new:rule": "node packages/scar/dist/cli.js new"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
+    "@types/node": "^26.6.6",
     "tsx": "^4.20.3",
     "typescript": "^6.0.3"
   }
