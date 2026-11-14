@@ -43,6 +43,9 @@ jobs:
       - name: dist is up to date
         if: matrix.node == 22
         run: |
+          # Ignore file-mode bits: the build marks cli.js executable, and a commit
+          # made on Windows does not record that. Only the content must match.
+          git config core.fileMode false
           if [ -n "$(git status --porcelain -- packages/scar/dist)" ]; then
             echo "packages/scar/dist is out of date - run 'npm run build' and commit it"
             git status --porcelain -- packages/scar/dist
