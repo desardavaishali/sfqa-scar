@@ -399,7 +399,7 @@ test('parseArgs rejects asking for two output formats at once', () => {
 });
 
 test('parseArgs validates options and the default rules file exists', () => {
-  assert.ok(DEFAULT_RULES.endsWith('rules/generic.json'));
+  assert.ok(DEFAULT_RULES.replace(/\\/g, '/').endsWith('rules/generic.json'));
   assert.throws(() => parseArgs(['--fail-on', 'sometimes']), CliError);
   assert.throws(() => parseArgs(['--max-per-rule', '0']), CliError);
   assert.throws(() => parseArgs(['--rules']), CliError);
