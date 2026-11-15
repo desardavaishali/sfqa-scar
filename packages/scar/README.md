@@ -14,7 +14,7 @@ npx sfqa-scar .                 # scan with the shipped template (or your scar-t
 ```
 
 ```text
-[HIGH] ST-004 - Never pass options to isVisible() - it takes none and returns instantly. Use waitFor({ state: 'visible', timeout }) when render timing matters.
+[HIGH] ST-004 - Never pass a timeout to isVisible() - the option is ignored and the call returns instantly. Use waitFor({ state: 'visible', timeout }) when render timing matters.
   where  : test-pages/web/LeadPage.ts:212
   matched: const visible = await label.isVisible({ timeout: 5000 });
   context: All Playwright page objects (test-pages/web/**), field readers and verification helpers reading Lightning labels.
@@ -72,7 +72,7 @@ incident, because the incident is the part you already know:
 That paragraph is the whole job. It becomes a rule like this:
 
 ```bash
-npx sfqa-scar new --rule "Never pass options to isVisible() - it takes none" --scope "test-pages/**"
+npx sfqa-scar new --rule "Never pass a timeout to isVisible() - it is ignored" --scope "test-pages/**"
 ```
 
 which writes three files: the rule entry, one fixture that must match, and one
@@ -477,7 +477,7 @@ that you replace:
 | Detector input | Shipped example | Replace with |
 |---|---|---|
 | `labelRules.canonical` | `Web`, `Event`, `Referral`, `Phone`, `Email`, `SMS` | the exact labels your org renders |
-| inventory-code shape | `Project-B2-03-04` | the identifier shape your product uses |
+| inventory-code shape | `SKU-A12-0042` | the identifier shape your product uses |
 | local-only file patterns | `local-notes-*.md`, `*.zip` | the paths your team keeps local |
 | timeout ceiling | `< 360000` ms | your measured longest journey, minus headroom |
 
@@ -668,7 +668,7 @@ your stack, delete it rather than leave it in the file.
 | ST-001 | high | Never hardcode credentials, tokens or secrets in code, config fallbacks or committed `.env` files. |
 | ST-002 | high | Each environment config reads its own environment's variables, never a sibling's. |
 | ST-003 | high | Picklist values match the Salesforce label exactly: case, spaces, hyphens. |
-| ST-004 | high | `isVisible()` takes no options; use `waitFor({ state: 'visible' })`. |
+| ST-004 | high | `isVisible()` ignores any `timeout`; use `waitFor({ state: 'visible' })`. |
 | ST-005 | med | Never treat a success toast as the only success signal. |
 | ST-006 | med | Record navigation tolerates Lightning URL variants; no single strict `waitForURL`. |
 | ST-007 | med | Server-side integration fields need periodic reload, not just a deadline poll. |
@@ -859,6 +859,6 @@ spread, the rule that could never fire, the detectors that were the problem).
 
 ## Status
 
-`0.1.0`. Dependency-free, Node >= 20, TypeScript types included. 18 of 19 rules
+`0.1.1`. Dependency-free, Node >= 20, TypeScript types included. 18 of 19 rules
 have a machine detector and are proven both ways; the 19th is a documented gap.
 The public proof runs on synthetic fixtures, not a field trial. MIT licensed.

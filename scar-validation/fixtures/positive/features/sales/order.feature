@@ -1,3 +1,3 @@
 Feature: order
   Scenario: book a unit
-    Given unit Tower-B2-03-04 is available
+    Given item SKU-A12-0042 is available

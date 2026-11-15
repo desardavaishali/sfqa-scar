@@ -14,7 +14,7 @@ npx sfqa-scar .
 ```
 
 ```text
-[HIGH] ST-004 - Never pass options to isVisible() - it takes none and returns instantly.
+[HIGH] ST-004 - Never pass a timeout to isVisible() - the option is ignored and the call returns instantly.
   where  : test-pages/web/LeadPage.ts:212
   matched: const visible = await label.isVisible({ timeout: 5000 });
   origin : a field reader reported a Lightning label as empty while it was still rendering
@@ -47,7 +47,7 @@ Describe the incident; the tool writes the scaffolding and *proves* the rule:
 
 ```bash
 npx sfqa-scar new \
-  --rule "Never pass options to isVisible() - it takes none" \
+  --rule "Never pass a timeout to isVisible() - it is ignored" \
   --scope "test-pages/**"
 
 # puts a rule entry in scar-tissue.json, plus:

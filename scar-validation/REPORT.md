@@ -108,7 +108,7 @@ org's vocabulary are now explicit inputs:
 | Input | Shipped example |
 |---|---|
 | canonical picklist labels (`labelRules`) | `Web`, `Event`, `Referral`, `Phone`, `Email`, `SMS` |
-| inventory-code shape (ST-008) | `Project-B2-03-04` |
+| inventory-code shape (ST-008) | `SKU-A12-0042` |
 | timeout ceiling (ST-009) | `< 360000` ms |
 | local-only paths (ST-018, gap) | `local-notes-*.md`, `*.zip` |
 

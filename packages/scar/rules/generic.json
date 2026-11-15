@@ -101,7 +101,7 @@
     },
     {
       "id": "ST-004",
-      "rule": "Never pass options to isVisible() - it takes none and returns instantly. Use waitFor({ state: 'visible', timeout }) when render timing matters.",
+      "rule": "Never pass a timeout to isVisible() - the option is ignored and the call returns instantly. Use waitFor({ state: 'visible', timeout }) when render timing matters.",
       "context": "All Playwright page objects (test-pages/web/**), field readers and verification helpers reading Lightning labels.",
       "origin": {
         "commit": null,
@@ -220,7 +220,7 @@
         "summary": "Smoke scenarios pinned concrete inventory codes; each green run CONSUMED the record and the next run failed on 'not available'. The fix introduced a sentinel so the product's search picks the freshest eligible row at runtime."
       },
       "severity": "high",
-      "detection_pattern": "Concrete inventory codes in feature tables or step expectations. The shape below is an EXAMPLE (project-floor-unit); replace it with your org's identifier shape.",
+      "detection_pattern": "Concrete inventory codes in feature tables or step expectations. The shape below is an EXAMPLE (SKU-bin-number); replace it with your org's identifier shape.",
       "match": {
         "pathInclude": [
           "features/**",
@@ -230,7 +230,7 @@
           "**/node_modules/**"
         ],
         "linePatterns": [
-          "[A-Za-z][A-Za-z0-9]*-(?:B|T)\\d{1,2}-\\d{1,2}-\\d{1,2}"
+          "\\bSKU-[A-Z]\\d{1,2}-\\d{3,5}\\b"
         ]
       },
       "recommendation": "Use a sentinel (e.g. AUTO) resolved by an availability-aware search with deterministic tie-breaking, logging what was actually selected."
@@ -358,7 +358,7 @@
           "**/node_modules/**"
         ],
         "linePatterns": [
-          "new\\s+(?:LeadPage|OpportunityPage|SalesOrderPage|HomePage|UnitPage)\\(\\s*page\\s*,"
+          "new\\s+(?:LeadPage|OpportunityPage|OrderPage|HomePage|ItemPage)\\(\\s*page\\s*,"
         ],
         "fileExemptSignals": [
           "activePage"

@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-05
+## [0.1.1] - 2026-11-15
+
+### Changed
+- ST-004 wording now says what Playwright does: the `timeout` option on `isVisible()` is ignored and the call returns instantly (it previously said the method takes no options).
+- The shipped ST-008 example identifier shape and the fixtures that use it are now a neutral `SKU-A12-0042` shape instead of an organisation-specific one; replace it with your own.
+- Page-object names in the ST-013 example pattern are generic (`OrderPage`, `ItemPage`).
+
+## [0.1.0] - 2026-11-14
 
 ### Added
 - Dependency-free CLI (`sfqa-scar`) for Node >= 20: `scan`, `new`, `prove`, and `harvest`.

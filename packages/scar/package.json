@@ -1,6 +1,6 @@
 {
   "name": "@sfqa/scar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Review code against a Salesforce test suite's scar tissue: past failures, encoded as declarative rules.",
   "license": "MIT",
   "author": "Vaishali Desarda",

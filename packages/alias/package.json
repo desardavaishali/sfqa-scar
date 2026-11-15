@@ -1,0 +1,42 @@
+{
+  "name": "sfqa-scar",
+  "version": "0.1.0",
+  "description": "Alias for @sfqa/scar, so `npx sfqa-scar` works. Review code against a test suite's scar tissue: past failures, encoded as declarative rules.",
+  "license": "MIT",
+  "author": "Vaishali Desarda",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/desardavaishali/sfqa-scar.git",
+    "directory": "packages/alias"
+  },
+  "bugs": {
+    "url": "https://github.com/desardavaishali/sfqa-scar/issues"
+  },
+  "homepage": "https://github.com/desardavaishali/sfqa-scar#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "sfqa-scar": "bin/sfqa-scar.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@sfqa/scar": "^0.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "salesforce",
+    "scar-tissue",
+    "code-review",
+    "lint",
+    "testing",
+    "qa",
+    "playwright"
+  ]
+}

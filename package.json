@@ -1,6 +1,6 @@
 {
   "name": "sfqa-scar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Executable scar tissue: a test suite's past failures turned into rules a reviewer runs on every commit.",

@@ -1,3 +1,3 @@
-Feature: booking
-  Scenario: book a unit
-    Given unit AUTO is available
+Feature: ordering
+  Scenario: place an order
+    Given item AUTO is available
