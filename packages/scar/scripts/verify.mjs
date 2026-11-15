@@ -92,7 +92,9 @@ await check('tarball contains exactly the publishable set', () => {
     throw new Error(`npm pack --dry-run failed: ${(result.stderr || result.stdout || '').trim()}`);
   }
 
-  const meta = JSON.parse(result.stdout)?.[0];
+  // npm 11 and older print an array; npm 12 prints an object keyed by package name.
+  const parsed = JSON.parse(result.stdout);
+  const meta = Array.isArray(parsed) ? parsed[0] : Object.values(parsed ?? {})[0];
   assert(meta, 'npm pack produced no metadata');
   const paths = (meta.files ?? []).map((file) => file.path);
   const files = new Set(paths);
