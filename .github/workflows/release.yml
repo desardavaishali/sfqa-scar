@@ -1,4 +1,5 @@
-# Publishes @sfqa/scar to npm when you push a version tag, e.g. v0.1.0.
+# Stages @sfqa/scar for npm release when you push a version tag, e.g. v0.1.1.
+# You then approve it on npmjs.com (Staged Packages) with 2FA.
 #
 # No npm token is stored anywhere: npm "trusted publishing" lets this workflow
 # prove its identity to npm over OIDC, and npm records a provenance attestation
@@ -43,6 +44,9 @@ jobs:
             echo "tag $GITHUB_REF_NAME does not match packages/scar/package.json ($version)"
             exit 1
           fi
-      - name: publish
+      # Stage the release for approval. The run goes green once the package is
+      # staged; a maintainer then approves it on npmjs.com (Staged Packages tab)
+      # or with `npm stage approve <id>`, which asks for 2FA.
+      - name: stage for approval
         working-directory: packages/scar
-        run: npm publish --access public --provenance
+        run: npm stage publish --access public --provenance

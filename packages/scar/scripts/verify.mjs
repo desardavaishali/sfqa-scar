@@ -83,6 +83,17 @@ await check('docs ship', () => {
   return 'README.md, LICENSE';
 });
 
+await check('bin paths are normalised (no leading ./)', () => {
+  // npm 12 drops a "./dist/cli.js" bin on publish ("invalid and removed"), which
+  // would publish a package with no command. Keep the plain form.
+  const bins = typeof pkg.bin === 'string' ? [pkg.bin] : Object.values(pkg.bin ?? {});
+  assert(bins.length > 0, 'package.json has no bin');
+  for (const target of bins) {
+    assert(!String(target).startsWith('./'), `bin "${target}" must not start with ./ (use "dist/cli.js")`);
+  }
+  return bins.join(', ');
+});
+
 await check('tarball contains exactly the publishable set', () => {
   const result = spawnSync('npm', ['pack', '--dry-run', '--json'], {
     cwd: packageRoot,
