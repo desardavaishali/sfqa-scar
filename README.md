@@ -91,7 +91,8 @@ harness once caught a rule whose cross-line detector could never fire - and a re
 run on the source repo showed 37 highs where ~8 were real, because the detectors
 were misreading clean code. Each misread became a detector fix + a regression test
 (not a lower severity); re-run: 113 findings, 11 highs. Read the breakdown in
-[`scar-validation/REPORT.md`](scar-validation/REPORT.md).
+[`scar-validation/REPORT.md`](scar-validation/REPORT.md) and the story in the
+[blog post](https://www.vaishalidesarda.com/blog/so-i-made-our-postmortems-run-in-ci/).
 
 ## What is in here
 
@@ -129,5 +130,5 @@ examples are in [`packages/scar/README.md`](packages/scar/README.md#run-it-on-ev
 
 ## Licence
 
-MIT. See [`packages/scar/README.md`](packages/scar/README.md) for the full
+Apache-2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE), and [`packages/scar/README.md`](packages/scar/README.md) for the full
 reference.

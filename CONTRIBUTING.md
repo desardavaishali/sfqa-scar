@@ -49,5 +49,5 @@ reason in `context`.
 - New behaviour needs a test. Detector changes need a fixture.
 - Add a line to `CHANGELOG.md` under an `Unreleased` heading.
 
-By contributing you agree that your contribution is licensed under the MIT
-licence in this repository.
+By contributing you agree that your contribution is licensed under the Apache License 2.0
+in this repository (see `LICENSE`).

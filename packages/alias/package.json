@@ -1,8 +1,8 @@
 {
   "name": "sfqa-scar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Alias for @sfqa/scar, so `npx sfqa-scar` works. Review code against a test suite's scar tissue: past failures, encoded as declarative rules.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Vaishali Desarda",
   "repository": {
     "type": "git",
@@ -22,7 +22,8 @@
   "files": [
     "bin",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "dependencies": {
     "@sfqa/scar": "^0.1.0"

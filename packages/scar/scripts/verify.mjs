@@ -48,7 +48,7 @@ const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
 await check('identity', () => {
   assert(pkg.name === '@sfqa/scar', `unexpected name ${pkg.name}`);
   assert(typeof pkg.version === 'string' && pkg.version.length > 0, 'missing version');
-  assert(pkg.license === 'MIT', 'license must be MIT for publish');
+  assert(pkg.license === 'Apache-2.0', 'license must be Apache-2.0 for publish');
   assert(pkg.publishConfig?.access === 'public', 'scoped packages must publish with access=public');
   assert(pkg.bin?.['sfqa-scar'], 'missing the sfqa-scar bin entry');
   return `${pkg.name}@${pkg.version}`;
@@ -114,6 +114,7 @@ await check('tarball contains exactly the publishable set', () => {
     'package.json',
     'README.md',
     'LICENSE',
+    'NOTICE',
     'dist/index.js',
     'dist/index.d.ts',
     'dist/cli.js',
@@ -129,6 +130,7 @@ await check('tarball contains exactly the publishable set', () => {
     'package.json',
     'README.md',
     'LICENSE',
+    'NOTICE',
     'CHANGELOG.md',
     'dist/',
     'rules/',

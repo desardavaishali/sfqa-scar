@@ -12,4 +12,4 @@ npm install -D @sfqa/scar            # or install the real package
 Documentation, rules, the proof and the source live in the main repository:
 https://github.com/desardavaishali/sfqa-scar
 
-MIT.
+Apache-2.0.

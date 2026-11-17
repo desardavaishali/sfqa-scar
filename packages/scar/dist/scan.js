@@ -12,6 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, extname, join, relative, resolve, sep } from 'node:path';
+import { redactText } from './redact.js';
 export const SKIP_DIRS = new Set([
     'node_modules',
     '.git',
@@ -360,7 +361,10 @@ export function lintContent(relPath, content, rules, options = {}) {
             });
         }
     }
-    return findings;
+    // A scanner that finds credentials must not print them. Mask secret-shaped
+    // values once, here, so text, markdown and JSON output are all covered. File-level
+    // findings (line 0) quote a file name or a rule, not a line of code.
+    return findings.map((finding) => finding.line === 0 ? finding : { ...finding, snippet: redactText(finding.snippet) });
 }
 /** Read and lint every file, skipping binaries, huge files and ignored dirs. */
 export function scanFiles(cwd, files, rules, options = {}) {

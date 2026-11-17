@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-11-15
+
+### Security
+- Scan output no longer prints secret values. Lines that carry a credential-shaped name (password, secret, token, api key and similar) are shown with the value replaced by `<redacted>`, in text, markdown and JSON output. Detection is unchanged; only what is displayed changed. Before this release the matched line was printed as written, so a finding could put a credential into a CI log.
+
+### Changed
+- License changed from MIT to Apache-2.0 (adds an explicit patent grant). Versions 0.1.0 and 0.1.1 remain available under MIT. A `NOTICE` file now ships in the package.
+- The README links to the blog post.
+
 ## [0.1.1] - 2026-11-15
 
 ### Changed

@@ -799,3 +799,54 @@ test('rule-set validation rejects duplicate ids and uncompilable regexes', () =>
   );
   assert.equal(compileRule(rule())._line[0].source, 'bad');
 });
+
+
+test('findings never print a secret value, in text, markdown or JSON', () => {
+  const root = mkdtempSync(join(tmpdir(), 'scar-redact-'));
+  const original = console.log;
+  try {
+    mkdirSync(join(root, 'src'));
+    writeFileSync(
+      join(root, 'src', 'env.ts'),
+      "export const cfg = { Password: process.env.ADMIN_PASSWORD || 'Hunter2Hunter2' };\n",
+    );
+
+    for (const format of [[], ['--markdown'], ['--json']]) {
+      const lines: string[] = [];
+      console.log = (message?: unknown) => {
+        lines.push(String(message));
+      };
+      const code = run(
+        parseArgs([...format, '--rules', RULES_PATH, '--fail-on', 'high', root]),
+        root,
+      );
+      console.log = original;
+      const output = lines.join('\n');
+
+      assert.equal(code, 1, `exit code for ${format.join(' ') || 'text'}`);
+      assert.ok(output.includes('ST-001'), 'the finding is still reported');
+      assert.ok(!output.includes('Hunter2Hunter2'), `secret leaked in ${format.join(' ') || 'text'} output`);
+      assert.ok(output.includes('<redacted>'), 'the value is masked, not dropped silently');
+    }
+  } finally {
+    console.log = original;
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('masking changes what is shown, not what is found', () => {
+  const secret = lint('src/env.ts', "Password: process.env.X || 'Hunter2Hunter2'");
+  assert.deepEqual(
+    secret.map((finding) => finding.rule.id),
+    ['ST-001'],
+  );
+  assert.equal(secret[0].snippet, "Password: process.env.X || '<redacted>'");
+
+  // A line with no credential-shaped name is shown as written.
+  const probe = lint('pages/orders.ts', 'const x = await el.isVisible({ timeout: 5000 });');
+  assert.ok(probe.some((finding) => finding.snippet.includes('isVisible({ timeout: 5000 })')));
+
+  // A file-name finding still names the file.
+  const env = lint('.env', 'A=1');
+  assert.ok(env.some((finding) => finding.snippet.includes('".env"')));
+});

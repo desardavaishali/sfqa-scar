@@ -191,7 +191,7 @@ To make it a gate, drop `|| true` and `continueOnError` and let the exit code
 fail the job. Advisory is a good first step: the findings are real, but you
 decide when a red build is earned.
 
-That is the whole "automatic" story. No daemon, no network, no API key. Once
+That is the whole "automatic" story. No daemon, no network, no API key. Findings mask secret-shaped values (shown as `<redacted>`), so the output is safe to paste into a CI log or a pull request. Once
 those hooks exist, nobody has to remember to run it.
 
 ## Day one: the hook does not add rules
@@ -854,11 +854,11 @@ false alarms gets switched off in a week; the point is to be wrong in a way you
 can read, fix, and prove.
 
 Read the numbers as method, not a promise: `scar-validation/REPORT.md` records the
-breakdown, and the blog tells the story of the three catches (the scar that
+breakdown, and [the blog post](https://www.vaishalidesarda.com/blog/so-i-made-our-postmortems-run-in-ci/) tells the story of the three catches (the scar that
 spread, the rule that could never fire, the detectors that were the problem).
 
 ## Status
 
 `0.1.1`. Dependency-free, Node >= 20, TypeScript types included. 18 of 19 rules
 have a machine detector and are proven both ways; the 19th is a documented gap.
-The public proof runs on synthetic fixtures, not a field trial. MIT licensed.
+The public proof runs on synthetic fixtures, not a field trial. Apache-2.0 licensed.

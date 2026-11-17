@@ -1,8 +1,8 @@
 {
   "name": "@sfqa/scar",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Review code against a Salesforce test suite's scar tissue: past failures, encoded as declarative rules.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Vaishali Desarda",
   "repository": {
     "type": "git",
@@ -36,6 +36,7 @@
     "prompts",
     "README.md",
     "LICENSE",
+    "NOTICE",
     "CHANGELOG.md"
   ],
   "scripts": {
